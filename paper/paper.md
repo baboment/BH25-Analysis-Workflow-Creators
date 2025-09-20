@@ -46,6 +46,8 @@ authors_short: Ryo Mameda, Hyeokjin Kwon, Pitiporn Noisagul, Sora Yonezawa
 
 As part of the DBCLS BioHackathon 2025, we here report about creating and publishing analytical workflow. The analytical workflow is usually based on shell scripts. However, problems of reusability and environmental dependencies are sometimes occuring [@citation:Nahan2024]. Here, we aimed to this problems, the workflow based on workflow languages is developed.
 
+Structural variants (SVs) are a major source of genetic variation and can impact disease (including cancer)[1]. However, traditional analyses use a single linear reference (e.g., GRCh38 or T2T-CHM13) which may miss population-specific sequences and bias read alignment. Recent efforts like the Human Pangenome Reference Consortium (HPRC) and Chinese Pangenome Consortium (CPC) have built pan-genome references that incorporate multiple haplotypes to better represent human diversity[2][3]. Pangenome graphs include additional structural variants and novel sequences, improving read alignment rates and variant discovery[2]. For example, each CPC genome had tens of megabases of sequence not found in GRCh38 or even T2T-CHM13[3], underscoring how a single reference is incomplete. Using a pan-genome as reference can therefore reduce mapping bias and improve SV detection – studies have shown pangenome-based variant calling finds more variants and higher accuracy than linear references[4].
+
 # Results
 
 ## Metatranscriptomic analysis
@@ -58,6 +60,9 @@ We confirmed that the published CWL files work correctly with test datasets (met
 
 ![Metatranscriptomic Analysis Workflow](./workflow_cwlization.png)
 
+## Pangenome-Based SV Calling Benchmark
+
+We selected data from the referenced study and restricted the analysis to the Dai population to serve as the truth dataset. Because access to the original raw reads is delayed, we used the provided CRAM files aligned to both T2T and GRCh38, converting and merging per-sample reads into a single FASTQ for each individual. From each merged FASTQ, we performed random downsampling to approximately 17×, 10×, and 5× relative to the estimated T2T genome size. For mapping, we used the CPC+HPRC+CHM13v2 pangenome graph (attributed to Prof. Shuhua Xu’s group) and adopted the Clara Parabricks toolchain: minimap2 for linear-reference alignment and vg giraffe for graph mapping. For SV benchmarking, we used Truvari, deriving a truth VCF by converting the GAF-based SV set provided by the 1KG_ONT_Vienna resource into VCF format.
 
 # Discussion
 
@@ -81,8 +86,8 @@ not be generalized to other cases.
 * I  - Importance (L:Low, M:Medium, H:High)
 * A  - Applicability (Y:Yes, M:Maybe, N:No)
 
-| Practice Name |D|I|A| Description |
-|------|:-:|:-:|:-:|-------------|
+| Practice Name | D | I | A | Description |
+|---------------|---|---|---|-------------|
 | Use class type for files | E | M | Y | Avoid using `type: string` for input/output files. Use `type: File` or `type: Directory` appropriately. |
 | License Declaration | M | H | Y | Include a license field in all tools/workflows. Prefer licenses corresponding to SPDX identifier like Apache 2.0. |
 | Author Attribution | E | M | Y | Include author and contributor information. Use unambiguous identifiers like ORCID. |
@@ -100,6 +105,11 @@ not be generalized to other cases.
 | Peer Review | H | H | N | Have a colleague test and provide feedback on the tool description. |
 | Subworkflow Feature Requirement | M | H | M | Utilize `SubworkflowFeatureRequirement` for modular workflows with abstractable components. |
 | Container Conformity | M | M | M | Ensure software containers conform to the “Recommendations for the packaging and containerizing of bioinformatics software”. |
+
+
+## Constraints & Scope
+Building the required pangenome graph indices for GPU-accelerated mapping proved time-consuming and storage-intensive. Given the end-to-end data footprint—from FASTQ through graph indices—we limited the current benchmarking run to a subset of Dai samples. Moreover, there are comparatively few mature tools for calling SVs directly from graph-aligned reads, which constrained our choice of methods. Despite these practical limits, the workflow enables systematic evaluation across decreasing coverages and provides a clear path to expand benchmarking as resources allow.
+
 
 ## Next Step
 
